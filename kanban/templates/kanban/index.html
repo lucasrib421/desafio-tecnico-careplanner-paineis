@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kanban CarePlanner</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+  }
+  .kanban {
+    display: flex;
+    gap: 10px;
+  }
+  .bucket {
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 250px;
+    background-color: #f7f7f7;
+  }
+  .bucket h3 {
+    text-align: center;
+  }
+  .card {
+    background-color: white;
+    padding: 8px;
+    margin: 8px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 0 3px rgba(0,0,0,0.2);
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px black;
+    z-index: 1000;
+  }
+  .modal.active {
+    display: block;
+  }
+  .modal-close {
+    cursor: pointer;
+    float: right;
+    font-weight: bold;
+    font-size: 18px;
+  }
+  button.move-btn {
+    margin-top: 5px;
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Kanban CarePlanner</h1>
+
+<div class="kanban" id="kanban"></div>
+
+<!-- Modal para detalhes -->
+<div class="modal" id="modal">
+  <span class="modal-close" id="modal-close">&times;</span>
+  <h2>Detalhes do Paciente</h2>
+  <div id="modal-content"></div>
+</div>
+
+<script>
+const API_BASE = '/api';
+
+// Função para Incluir o token CSRF nos headers do fetch PATCH
+function getCSRFToken() {
+  const cookieValue = document.cookie.split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+  return cookieValue;
+}
+
+
+async function fetchBuckets() {
+  const res = await fetch(`${API_BASE}/buckets/`);
+  return await res.json();
+}
+
+async function fetchCards() {
+  const res = await fetch(`${API_BASE}/cards/`);
+  return await res.json();
+}
+
+// Nova Função Update 
+
+async function updateCardBucket(cardId, bucketId) {
+  await fetch(`${API_BASE}/cards/${cardId}/`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({bucket: bucketId})
+  });
+}
+
+//Função antiga
+/*
+async function updateCardBucket(cardId, bucketId) {
+  await fetch(`${API_BASE}/cards/${cardId}/`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({bucket: bucketId})
+  });
+}
+*/
+
+function createCardElement(card, buckets) {
+  const cardEl = document.createElement('div');
+  cardEl.className = 'card';
+  cardEl.textContent = `${card.name} - ${card.admission_date}`;
+  cardEl.onclick = () => showModal(card);
+
+  // Botões para mover card entre buckets
+  const currentBucketIndex = buckets.findIndex(b => b.id === card.bucket);
+  if(currentBucketIndex > 0) {
+    const btnLeft = document.createElement('button');
+    btnLeft.textContent = '<';
+    btnLeft.className = 'move-btn';
+    btnLeft.onclick = async (e) => {
+      e.stopPropagation();
+      await updateCardBucket(card.id, buckets[currentBucketIndex - 1].id);
+      loadKanban();
+    };
+    cardEl.appendChild(btnLeft);
+  }
+  if(currentBucketIndex < buckets.length - 1) {
+    const btnRight = document.createElement('button');
+    btnRight.textContent = '>';
+    btnRight.className = 'move-btn';
+    btnRight.onclick = async (e) => {
+      e.stopPropagation();
+      await updateCardBucket(card.id, buckets[currentBucketIndex + 1].id);
+      loadKanban();
+    };
+    cardEl.appendChild(btnRight);
+  }
+  return cardEl;
+}
+
+function showModal(card) {
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <p><b>Nome:</b> ${card.name}</p>
+    <p><b>Estado Civil:</b> ${card.marital_status}</p>
+    <p><b>Idade:</b> ${card.age}</p>
+    <p><b>Sexo:</b> ${card.gender}</p>
+    <p><b>Data de Admissão:</b> ${card.admission_date}</p>
+  `;
+  modal.classList.add('active');
+}
+
+document.getElementById('modal-close').onclick = () => {
+  document.getElementById('modal').classList.remove('active');
+};
+
+async function loadKanban() {
+  const buckets = await fetchBuckets();
+  const cards = await fetchCards();
+
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = '';
+
+  buckets.forEach(bucket => {
+    const bucketEl = document.createElement('div');
+    bucketEl.className = 'bucket';
+    bucketEl.innerHTML = `<h3>${bucket.name}</h3>`;
+    const cardsInBucket = cards.filter(c => c.bucket === bucket.id);
+    cardsInBucket.forEach(card => {
+      bucketEl.appendChild(createCardElement(card, buckets));
+    });
+    kanban.appendChild(bucketEl);
+  });
+}
+
+// Inicializa o Kanban
+loadKanban();
+
+</script>
+
+</body>
+</html>
