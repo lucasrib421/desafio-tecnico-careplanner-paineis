@@ -90,6 +90,93 @@ desafio-careplanner/
     Paginação e filtros na API
     Logs e monitoramento da aplicação
 
+📦 API Endpoints - CarePlanner
+
+    A API segue o padrão RESTful para manipulação dos recursos de Buckets (colunas do Kanban) e Cards (pacientes).
+
+💂 Buckets (Colunas do Kanban)
+
+GET /api/buckets/
+
+    Lista todos os buckets.
+
+    Exemplo de resposta:
+
+    [
+    {
+        "id": 1,
+        "name": "Pendente"
+    },
+    {
+        "id": 2,
+        "name": "Triagem"
+    }
+    ]
+
+POST /api/buckets/
+
+    Cria um novo bucket.
+
+    Corpo da requisição:
+
+    {
+    "name": "Alta"
+    }
+
+📝 Cards (Pacientes)
+
+GET /api/cards/
+
+    Lista todos os cards (pacientes).
+
+Exemplo de resposta:
+
+    [
+    {
+        "id": 1,
+        "name": "João Silva",
+        "marital_status": "Solteiro",
+        "age": 45,
+        "gender": "Masculino",
+        "admission_date": "2025-06-29",
+        "notes": "Paciente com histórico de hipertensão.",
+        "bucket": 1
+    }
+    ]
+
+POST /api/cards/
+
+    Cria um novo card (paciente).
+
+Corpo da requisição:
+
+    {
+    "name": "Maria Souza",
+    "marital_status": "Casada",
+    "age": 30,
+    "gender": "Feminino",
+    "admission_date": "2025-06-29",
+    "notes": "Sem observações.",
+    "bucket": 1
+    }
+
+PATCH /api/cards/{id}/
+
+Atualiza parcialmente um card (ex: mover entre buckets).
+
+Corpo da requisição para mover de bucket:
+
+    {
+    "bucket": 2
+    }
+
+🔒 Segurança
+
+    Apenas usuários autenticados podem alterar dados.
+    O frontend utiliza token CSRF nas requisições PATCH.
+    A autenticação padrão do Django Admin está habilitada.
+
+
 🗄️ Script SQL Opcional para Banco PostgreSQL
 
 Caso prefira criar as tabelas manualmente no banco de dados, execute o seguinte SQL:
@@ -119,4 +206,3 @@ Exemplo de inserção de dados:
     -- Inserindo um card
     INSERT INTO kanban_card (name, marital_status, age, gender, admission_date, notes, bucket)
     VALUES ('João da Silva', 'Solteiro', 30, 'Masculino', CURRENT_DATE, 'Paciente em observação', 1);
-
