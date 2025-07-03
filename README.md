@@ -206,3 +206,42 @@ Exemplo de inserção de dados:
     -- Inserindo um card
     INSERT INTO kanban_card (name, marital_status, age, gender, admission_date, notes, bucket)
     VALUES ('João da Silva', 'Solteiro', 30, 'Masculino', CURRENT_DATE, 'Paciente em observação', 1);
+
+
+# Novas instruções de uso, devido a correção dos problemas de autenticação via token ou web
+
+🔐 Autenticação e Acesso
+O sistema possui dois modos de autenticação:
+
+✅ 1. Login via Interface Web (Recomendado para uso do Kanban)
+Acesse:
+
+http://127.0.0.1:8000/admin
+Faça login com seu usuário e senha cadastrados no Django. Após o login, o acesso ao Kanban estará liberado:
+
+http://127.0.0.1:8000/
+Esse login via navegador cria uma sessão autenticada que permite consumir as APIs diretamente pelo frontend do Kanban sem necessidade de token manual.
+
+✅ 2. Login via Token (Recomendado para testar via Postman ou API externa)
+Obtenha um token de autenticação via requisição POST:
+
+POST http://127.0.0.1:8000/api-token-auth/
+Corpo da requisição:
+
+{
+  "username": "seu_usuario",
+  "password": "sua_senha"
+}
+Exemplo de resposta:
+
+{
+  "token": "seu_token_gerado_aqui"
+}
+Inclua esse token no cabeçalho das requisições à API:
+
+Authorization: Token seu_token_gerado_aqui
+Exemplo de requisição autenticada no Postman:
+
+GET http://127.0.0.1:8000/api/cards/
+Headers:
+Authorization: Token seu_token_gerado_aqui

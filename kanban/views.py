@@ -1,10 +1,9 @@
 from rest_framework import viewsets
 from .models import Bucket, Card
 from .serializers import BucketSerializer, CardSerializer
+from rest_framework.permissions import IsAuthenticated
 #from rest_framework.permissions import AllowAny
 # Usar como camada de segurança para alterações apenas com usuário
-from rest_framework.permissions import IsAuthenticated
-
 
 class BucketViewSet(viewsets.ModelViewSet):
     queryset = Bucket.objects.all()
