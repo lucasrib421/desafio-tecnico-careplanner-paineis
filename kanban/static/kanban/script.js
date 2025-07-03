@@ -9,26 +9,76 @@ document.addEventListener('DOMContentLoaded', () => {
     return cookieValue;
   }
 
-  async function fetchBuckets() {
-    const res = await fetch(`${API_BASE}/buckets/`);
-    return await res.json();
+
+/*
+Modificações realizadas nas funções fetchBuckets, fetchCards e updateCardBucket.
+Realizadas para facilitar a encontrar problemas de conexões como os de trocas de token.
+*/   
+async function fetchBuckets() {
+  const res = await fetch(`${API_BASE}/buckets/`, {
+    credentials: 'include' // 'credentials: include' é para cookies. Se usar Bearer Token, precisa do cabeçalho 'Authorization'.
+  });
+
+  // VERIFICAÇÃO ESSENCIAL
+  if (!res.ok) {
+    // Se a resposta for 401, 403, 500 etc., lança um erro para parar a execução.
+    throw new Error(`Erro ao buscar buckets: ${res.status}`);
   }
 
-  async function fetchCards() {
-    const res = await fetch(`${API_BASE}/cards/`);
-    return await res.json();
+  return await res.json();
+}
+
+async function fetchCards() {
+  const res = await fetch(`${API_BASE}/cards/`, {
+    credentials: 'include'
+  });
+
+  // VERIFICAÇÃO ESSENCIAL
+  if (!res.ok) {
+    throw new Error(`Erro ao buscar cards: ${res.status}`);
   }
 
-  async function updateCardBucket(cardId, bucketId) {
-    await fetch(`${API_BASE}/cards/${cardId}/`, {
+  return await res.json();
+}
+
+async function updateCardBucket(cardId, bucketId) {
+  const csrfToken = getCSRFToken();
+
+  if (!csrfToken) {
+    console.error('Erro de segurança: Token CSRF não encontrado.');
+    alert('Não foi possível realizar a alteração. Por favor, recarregue a página e tente novamente.');
+    return;
+  }
+
+  try {
+    // 1. Armazene a resposta da requisição em uma variável
+    const response = await fetch(`${API_BASE}/cards/${cardId}/`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': getCSRFToken()
+        'X-CSRFToken': csrfToken
       },
-      body: JSON.stringify({bucket: bucketId})
+      credentials: 'include',
+      body: JSON.stringify({ bucket: bucketId })
     });
+
+    // 2. VERIFIQUE SE A RESPOSTA FOI BEM-SUCEDIDA!
+    //    response.ok será 'false' para erros como 403 (Forbidden) ou 400 (Bad Request)
+    if (!response.ok) {
+      // Cria um objeto de erro com o status da resposta para facilitar a depuração
+      throw new Error(`O servidor respondeu com um erro: ${response.status} ${response.statusText}`);
+    }
+
+    // 3. Se tudo deu certo (response.ok foi true), recarregue o Kanban
+    console.log('Card atualizado com sucesso!');
+    loadKanban(); // Mova esta linha para dentro do fluxo de sucesso
+
+  } catch (error) {
+    // 4. Agora o bloco catch irá capturar tanto erros de rede quanto o erro que criamos acima
+    console.error('Falha ao atualizar o card:', error);
+    alert('Falha ao salvar a alteração. Verifique o console para mais detalhes.');
   }
+}
 
   function createCardElement(card, buckets) {
     const cardEl = document.createElement('div');
